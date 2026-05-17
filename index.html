@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0a0a0c;
+    --surface:   #111116;
+    --surface2:  #18181f;
+    --border:    #27272f;
+    --gold:      #f5a623;
+    --gold-dim:  #b87a18;
+    --silver:    #8a8a9a;
+    --text:      #e8e8f0;
+    --text-dim:  #5a5a6e;
+    --green:     #22c55e;
+    --red:       #ef4444;
+    --yellow:    #eab308;
+    --radius:    10px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    padding: 36px 40px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .header-left h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    letter-spacing: -0.02em;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .header-left h1 span {
+    color: var(--gold);
+  }
+
+  .header-left p {
+    margin-top: 8px;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .status-summary {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+  }
+
+  .status-summary span {
+    color: var(--gold);
+    font-weight: 500;
+  }
+
+  #refresh-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--silver);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+    text-transform: uppercase;
+  }
+
+  #refresh-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ── FILTERS ── */
+  .filters {
+    padding: 20px 40px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .filter-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    padding: 6px 14px;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+
+  .filter-btn:hover { border-color: var(--silver); color: var(--text); }
+  .filter-btn.active { background: var(--gold); border-color: var(--gold); color: #000; font-weight: 500; }
+
+  /* ── MAIN CONTENT ── */
+  main {
+    padding: 36px 40px 0;
+  }
+
+  .section {
+    margin-bottom: 44px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .section-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .section-count {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+  }
+
+  /* ── GRID ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, transform 0.15s;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--gold);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .card:hover {
+    border-color: #3a3a4a;
+    background: var(--surface2);
+    transform: translateY(-2px);
+  }
+
+  .card:hover::before { opacity: 1; }
+
+  .card.unreachable {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  .card.unreachable:hover {
+    transform: none;
+    border-color: var(--border);
+    background: var(--surface);
+  }
+
+  .card.unreachable::before { display: none; }
+
+  /* Card top row */
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  /* Status dot */
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 4px;
+    transition: background 0.3s;
+  }
+
+  .status-dot.checking { background: var(--yellow); animation: pulse 1.2s infinite; }
+  .status-dot.online   { background: var(--green); }
+  .status-dot.offline  { background: var(--red); }
+  .status-dot.na       { background: var(--text-dim); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+  }
+
+  /* Description */
+  .card-desc {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  /* Card footer */
+  .card-footer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: auto;
+  }
+
+  .badge {
+    font-size: 0.6rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 100px;
+    font-weight: 500;
+    border: 1px solid transparent;
+  }
+
+  .badge-loc-web       { background: #1a2a1a; border-color: #2a4a2a; color: #6fcf6f; }
+  .badge-loc-onedrive  { background: #1a2035; border-color: #2a3560; color: #6fa0df; }
+  .badge-loc-nas       { background: #2a1f10; border-color: #4a3518; color: #d4924a; }
+  .badge-loc-local     { background: #1e1a2a; border-color: #3a2f50; color: #a07ad4; }
+
+  .badge-work     { background: transparent; border-color: #3a3a2a; color: var(--gold-dim); }
+  .badge-personal { background: transparent; border-color: #2a3a3a; color: #5ababa; }
+
+  /* Status text */
+  .status-text {
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+    min-height: 14px;
+  }
+
+  /* Tooltip for unreachable */
+  .tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e1e2e;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 0.65rem;
+    color: var(--silver);
+    white-space: nowrap;
+    z-index: 100;
+    pointer-events: none;
+    max-width: 240px;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .card:hover .tooltip { display: block; }
+
+  /* Empty section */
+  .empty-section { display: none; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    header { padding: 24px 20px 20px; }
+    .filters { padding: 16px 20px; }
+    main { padding: 24px 20px 0; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>BEN <span>// CC</span></h1>
+    <p>Command Center &nbsp;·&nbsp; v1.0 &nbsp;·&nbsp; RFMX / Houger Express</p>
+  </div>
+  <div class="header-right">
+    <div class="status-summary">Checking <span id="total-count">—</span> items…</div>
+    <button id="refresh-btn" onclick="runStatusChecks()">↺ Refresh</button>
+  </div>
+</header>
+
+<div class="filters">
+  <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+  <button class="filter-btn" onclick="setFilter('Work', this)">Work</button>
+  <button class="filter-btn" onclick="setFilter('Personal', this)">Personal</button>
+</div>
+
+<main id="main"></main>
+
+<script>
+// ════════════════════════════════════════════════════════════════════
+//  CONFIG — Edit only this section to add, update, or remove items.
+//
+//  Fields:
+//    title       : Display name
+//    desc        : Short description (shown on card)
+//    url         : Full URL or file path. Use "" for placeholders.
+//    category    : Groups tiles under a heading
+//    locationType: "web" | "onedrive" | "nas" | "local"
+//    context     : "Work" | "Personal"
+//    checkable   : true = ping for status | false = skip (NAS, local, placeholder)
+//    offlineReason: Message shown when unreachable (for NAS/local/placeholder)
+// ════════════════════════════════════════════════════════════════════
+const ITEMS = [
+
+  // ── Transportation ───────────────────────────────────────────────
+  {
+    title: "Transportation Dashboard A",
+    desc: "Primary transportation operations dashboard.",
+    url: "https://rfmxnet-my.sharepoint.com/:u:/g/personal/ben_rfmx_net/IQCpzR6n1_liSZGpfTItGUQAATiWtEl-49jY1BY8XO_DgRY?e=twldqe",
+    category: "Transportation",
+    locationType: "onedrive",
+    context: "Work",
+    checkable: false,
+    offlineReason: "OneDrive — requires Microsoft 365 sign-in."
+  },
+  {
+    title: "Transportation Dashboard B",
+    desc: "Secondary transportation dashboard. Stored on internal NAS — accessible on-site only.",
+    url: "",
+    category: "Transportation",
+    locationType: "nas",
+    context: "Work",
+    checkable: false,
+    offlineReason: "NAS Drive — only accessible on the internal network at 4221 N Monaco St."
+  },
+  {
+    title: "Transportation Location Metrics",
+    desc: "Geographic and location-based performance metrics for Houger Express lanes.",
+    url: "https://rfmxnet-my.sharepoint.com/:u:/g/personal/ben_rfmx_net/IQClUsRe2jRyR7zHAOzowTXdASR7yIL3q10MMLZ7iVptQf8?e=rubgn0",
+    category: "Transportation",
+    locationType: "onedrive",
+    context: "Work",
+    checkable: false,
+    offlineReason: "OneDrive — requires Microsoft 365 sign-in."
+  },
+  {
+    title: "RFMX Trailer Dashboard",
+    desc: "Live trailer fleet tracking and yard management view.",
+    url: "https://rfmxnet-my.sharepoint.com/:u:/g/personal/ben_rfmx_net/IQCazj--DJfuRauu964WNWCZAUrgwQgt6t3MtdJq2vEzlS0?e=y9vgkN",
+    category: "Transportation",
+    locationType: "onedrive",
+    context: "Work",
+    checkable: false,
+    offlineReason: "OneDrive — requires Microsoft 365 sign-in."
+  },
+  {
+    title: "Transportation Remote Quote Tool",
+    desc: "Web-based quoting tool for transportation lanes.",
+    url: "",
+    category: "Transportation",
+    locationType: "web",
+    context: "Work",
+    checkable: false,
+    offlineReason: "Placeholder — URL not yet assigned."
+  },
+
+  // ── Warehouse & Operations ───────────────────────────────────────
+  {
+    title: "Warehouse Space Utilization Calculator",
+    desc: "Calculate and visualize warehouse space capacity and utilization.",
+    url: "https://rfmxnet-my.sharepoint.com/:u:/g/personal/ben_rfmx_net/IQDNsXyJ56nATYzQKNPXXxguAR-nSStqEY0XMhfphUORtEE?e=pdRQq7",
+    category: "Warehouse & Operations",
+    locationType: "onedrive",
+    context: "Work",
+    checkable: false,
+    offlineReason: "OneDrive — requires Microsoft 365 sign-in."
+  },
+
+  // ── Sales & BD ───────────────────────────────────────────────────
+  {
+    title: "Cabinet Pricing Tool",
+    desc: "Cabinet delivery rate calculator for installer accounts. Covers 643 ZIP codes with mountain/western slope surcharges.",
+    url: "",
+    category: "Sales & BD",
+    locationType: "web",
+    context: "Work",
+    checkable: false,
+    offlineReason: "Placeholder — add Firebase-hosted URL."
+  },
+  {
+    title: "LinkedIn Playbook",
+    desc: "Outreach strategies, messaging templates, and BD guidance for LinkedIn prospecting.",
+    url: "https://rfmxnet-my.sharepoint.com/:u:/g/personal/ben_rfmx_net/IQAofHkcilRMRq0ToDT-Mj_mARZFKVxvn8quhoDIUcZv2Qw?e=QzaTba",
+    category: "Sales & BD",
+    locationType: "onedrive",
+    context: "Work",
+    checkable: false,
+    offlineReason: "OneDrive — requires Microsoft 365 sign-in."
+  },
+
+  // ── Design & Reference ───────────────────────────────────────────
+  {
+    title: "HTML Elements Guide",
+    desc: "Claude-designed UI component and HTML reference guide.",
+    url: "https://rfmxnet-my.sharepoint.com/:u:/g/personal/ben_rfmx_net/IQAaFjbTkv26TJ69CRkhcxyoASDal37L7tPBy5e54nik4HI?e=qSilyY",
+    category: "Design & Reference",
+    locationType: "onedrive",
+    context: "Work",
+    checkable: false,
+    offlineReason: "OneDrive — requires Microsoft 365 sign-in."
+  },
+
+  // ── Personal ─────────────────────────────────────────────────────
+  {
+    title: "Resume Editor — Mom",
+    desc: "Resume editing tool for personal use.",
+    url: "https://rfmxnet-my.sharepoint.com/:u:/g/personal/ben_rfmx_net/IQB8AtBDZoYHSat7nIqA85AcAbR1U1R-fs7FZ342LD_iYCU?e=TkQyD1",
+    category: "Personal",
+    locationType: "onedrive",
+    context: "Personal",
+    checkable: false,
+    offlineReason: "OneDrive — requires Microsoft 365 sign-in."
+  },
+
+]; // ← END OF CONFIG
+
+
+// ════════════════════════════════════════════════════════════════════
+//  RENDERING — Do not edit below unless changing layout/logic
+// ════════════════════════════════════════════════════════════════════
+
+const LOC_LABELS = {
+  web:      "Web",
+  onedrive: "OneDrive",
+  nas:      "NAS Drive",
+  local:    "Local"
+};
+
+let currentFilter = "all";
+
+function setFilter(val, btn) {
+  currentFilter = val;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderDashboard();
+}
+
+function getVisibleItems() {
+  if (currentFilter === 'all') return ITEMS;
+  return ITEMS.filter(i => i.context === currentFilter);
+}
+
+function groupByCategory(items) {
+  const map = {};
+  items.forEach(item => {
+    if (!map[item.category]) map[item.category] = [];
+    map[item.category].push(item);
+  });
+  return map;
+}
+
+function renderDashboard() {
+  const main = document.getElementById('main');
+  main.innerHTML = '';
+  const items = getVisibleItems();
+  document.getElementById('total-count').textContent = items.length;
+
+  const grouped = groupByCategory(items);
+
+  Object.entries(grouped).forEach(([cat, catItems]) => {
+    const section = document.createElement('div');
+    section.className = 'section';
+    section.dataset.category = cat;
+
+    section.innerHTML = `
+      <div class="section-header">
+        <span class="section-title">${cat}</span>
+        <div class="section-line"></div>
+        <span class="section-count">${catItems.length} item${catItems.length !== 1 ? 's' : ''}</span>
+      </div>
+      <div class="grid" id="grid-${slugify(cat)}"></div>
+    `;
+    main.appendChild(section);
+
+    const grid = section.querySelector('.grid');
+    catItems.forEach(item => {
+      grid.appendChild(buildCard(item));
+    });
+  });
+}
+
+function buildCard(item) {
+  const hasUrl = item.url && item.url.trim() !== "";
+  const wrapper = document.createElement(hasUrl ? 'a' : 'div');
+
+  if (hasUrl) {
+    wrapper.href = item.url;
+    wrapper.target = "_blank";
+    wrapper.rel = "noopener noreferrer";
+  }
+
+  wrapper.className = 'card';
+  wrapper.dataset.id = slugify(item.title);
+
+  const locBadgeClass = `badge badge-loc-${item.locationType}`;
+  const ctxBadgeClass = `badge badge-${item.context.toLowerCase()}`;
+
+  wrapper.innerHTML = `
+    <div class="card-top">
+      <div class="card-title">${item.title}</div>
+      <div class="status-dot ${item.checkable ? 'checking' : 'na'}" id="dot-${slugify(item.title)}"></div>
+    </div>
+    <div class="card-desc">${item.desc}</div>
+    <div class="status-text" id="status-${slugify(item.title)}">
+      ${item.checkable ? 'Checking…' : (hasUrl ? '' : item.offlineReason)}
+    </div>
+    <div class="card-footer">
+      <span class="${locBadgeClass}">${LOC_LABELS[item.locationType]}</span>
+      <span class="${ctxBadgeClass}">${item.context}</span>
+    </div>
+    ${!hasUrl ? `<div class="tooltip">${item.offlineReason}</div>` : ''}
+  `;
+
+  if (!hasUrl) wrapper.classList.add('unreachable');
+
+  return wrapper;
+}
+
+async function runStatusChecks() {
+  document.getElementById('total-count').textContent = getVisibleItems().length;
+
+  for (const item of ITEMS) {
+    const id = slugify(item.title);
+    const dot = document.getElementById(`dot-${id}`);
+    const statusEl = document.getElementById(`status-${id}`);
+    if (!dot || !statusEl) continue;
+
+    if (!item.checkable) {
+      dot.className = 'status-dot na';
+      continue;
+    }
+
+    dot.className = 'status-dot checking';
+    statusEl.textContent = 'Checking…';
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 6000);
+      const res = await fetch(item.url, { method: 'HEAD', mode: 'no-cors', signal: controller.signal });
+      clearTimeout(timeout);
+      dot.className = 'status-dot online';
+      statusEl.textContent = 'Reachable';
+    } catch (e) {
+      dot.className = 'status-dot offline';
+      statusEl.textContent = e.name === 'AbortError' ? 'Timed out' : 'Unreachable';
+    }
+  }
+}
+
+function slugify(str) {
+  return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
+// Init
+renderDashboard();
+runStatusChecks();
+</script>
+</body>
+</html>
